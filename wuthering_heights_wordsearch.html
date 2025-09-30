@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sopa de Letras - Cumbres Borrascosas</title>
+    <style>
+        @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+            .print-page { page-break-after: always; }
+        }
+        
+        body {
+            font-family: 'Georgia', serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #2c3e50 0%, #4a5f7f 50%, #34495e 100%);
+            min-height: 100vh;
+            color: #333;
+            user-select: none;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255,255,255,0.02) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container {
+            background: linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            border: 2px solid rgba(139, 69, 19, 0.2);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 35px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(139, 69, 19, 0.1), rgba(101, 67, 33, 0.1));
+            border-radius: 15px;
+            border: 2px solid rgba(139, 69, 19, 0.3);
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.8em;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.15);
+            font-family: 'Georgia', serif;
+            font-style: italic;
+            letter-spacing: 1px;
+        }
+        
+        .header h2 {
+            color: #654321;
+            font-size: 1.4em;
+            margin: 15px 0 5px 0;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .header p {
+            color: #555;
+            font-style: italic;
+            font-size: 1.1em;
+            margin: 10px 0 0 0;
+        }
+        
+        .grid-container {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(15, 30px);
+            grid-template-rows: repeat(15, 30px);
+            gap: 1px;
+            border: 4px solid #654321;
+            border-radius: 10px;
+            padding: 12px;
+            background: linear-gradient(135deg, #8b7355, #6b5947);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        
+        .cell {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #a0826d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            background: #f5f5dc;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            color: #2c3e50;
+            font-family: 'Georgia', serif;
+        }
+        
+        .cell:hover {
+            background: #e8d5c4;
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(139, 69, 19, 0.4);
+        }
+        
+        .cell.selecting {
+            background: #8b7355 !important;
+            border-color: #654321;
+            color: white;
+        }
+        
+        .cell.found {
+            background: #5a4632 !important;
+            color: #f5deb3;
+            border-color: #3d2f22;
+        }
+        
+        .words-list {
+            margin-top: 35px;
+        }
+        
+        .words-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .word-item {
+            background: linear-gradient(135deg, #654321, #4a3319);
+            color: #f5deb3;
+            padding: 10px 14px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 11px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            font-family: 'Georgia', serif;
+            border: 1px solid rgba(245, 222, 179, 0.3);
+        }
+        
+        .word-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+            background: linear-gradient(135deg, #7a5230, #5c3d22);
+        }
+        
+        .word-item.found {
+            background: linear-gradient(135deg, #2c5f2d, #1e4620);
+            text-decoration: line-through;
+            opacity: 0.8;
+            color: #b8d4b8;
+        }
+        
+        .instructions {
+            background: linear-gradient(135deg, rgba(139, 69, 19, 0.08), rgba(101, 67, 33, 0.08));
+            border-left: 5px solid #654321;
+            padding: 18px;
+            margin: 25px 0;
+            border-radius: 0 12px 12px 0;
+            color: #2c3e50;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(135deg, #d7ccc8, #bcaaa4);
+            height: 28px;
+            border-radius: 14px;
+            margin: 25px 0;
+            overflow: hidden;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.2);
+            border: 2px solid #8d6e63;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(135deg, #5a4632, #3d2f22);
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #f5deb3;
+            font-weight: bold;
+            font-size: 14px;
+            font-family: 'Georgia', serif;
+        }
+        
+        .game-stats {
+            text-align: center;
+            margin: 25px 0;
+            color: #2c3e50;
+            font-family: 'Georgia', serif;
+        }
+        
+        .success-message {
+            background: linear-gradient(135deg, #5a4632, #3d2f22);
+            color: #f5deb3;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 25px 0;
+            display: none;
+            animation: slideIn 0.5s ease;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            border: 2px solid #654321;
+            font-family: 'Georgia', serif;
+            font-style: italic;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .word-found-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #5a4632, #3d2f22);
+            color: #f5deb3;
+            padding: 14px 24px;
+            border-radius: 10px;
+            z-index: 1000;
+            animation: fadeInOut 3s ease;
+            font-weight: bold;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+            font-family: 'Georgia', serif;
+            border: 2px solid #654321;
+        }
+        
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; transform: translateX(100px); }
+            15%, 85% { opacity: 1; transform: translateX(0); }
+        }
+        
+        .download-btn {
+            background: linear-gradient(135deg, #654321, #4a3319);
+            color: #f5deb3;
+            border: 2px solid #8b7355;
+            padding: 16px 35px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 25px 0;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+            font-family: 'Georgia', serif;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            background: linear-gradient(135deg, #7a5230, #5c3d22);
+        }
+        
+        .reset-btn {
+            background: linear-gradient(135deg, #8b4513, #6b3410);
+            color: #f5deb3;
+            border: 2px solid #a0522d;
+            padding: 12px 28px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            font-family: 'Georgia', serif;
+        }
+        
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+            background: linear-gradient(135deg, #a0522d, #7d4018);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌪️ Sopa de Letras 🌪️</h1>
+            <h2>Novelas Históricas Book Club PGD</h2>
+            <p>"Cumbres Borrascosas" - Emily Brontë</p>
+        </div>
+        
+        <div class="instructions">
+            <strong>📖 Instrucciones:</strong> Haz <strong>clic y arrastra</strong> desde la primera hasta la última letra de cada palabra. Las palabras pueden estar en horizontal, vertical o diagonal, hacia adelante o hacia atrás. ¡Encuentra todos los elementos del páramo!
+        </div>
+        
+        <div class="game-stats">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0 / 34</div>
+            </div>
+            <p id="statsText">🎯 Palabras encontradas: <strong>0 de 34</strong></p>
+            <button class="reset-btn no-print" onclick="resetGame()">🔄 Nuevo Juego</button>
+        </div>
+        
+        <div class="success-message" id="successMessage">
+            🎉 ¡EXTRAORDINARIO! 🎉<br>
+            Has conquistado los páramos de Yorkshire. ¡Eres un verdadero conocedor de Cumbres Borrascosas!
+        </div>
+        
+        <div class="grid-container">
+            <div class="grid" id="wordGrid"></div>
+        </div>
+        
+        <div class="words-list">
+            <h3 style="color: #2c3e50; text-align: center; margin-bottom: 20px; font-family: Georgia, serif; font-style: italic;">📚 Palabras a encontrar:</h3>
+            <div class="words-grid" id="wordsList"></div>
+        </div>
+        
+        <button class="download-btn no-print" onclick="downloadPDF()">📥 Descargar PDF</button>
+    </div>
+
+    <script>
+        const words = [
+            'HEATHCLIFF', 'CATHERINE', 'EMILY', 'BRONTE', 'YORKSHIRE', 
+            'PARAMO', 'EARNSHAW', 'LINTON', 'NELLY', 'EDGAR', 
+            'ISABELLA', 'HARETON', 'HINDLEY', 'LOCKWOOD', 'VENGANZA',
+            'AMOR', 'ODIO', 'FANTASMA', 'TORMENTA', 'PASION',
+            'MALDICION', 'GITANO', 'HEREDERO', 'MANSION', 'DOLOR',
+            'BRUMA', 'VIENTO', 'ALMA', 'ETERNO', 'SALVAJE',
+            'SOMBRIO', 'CRUEL', 'TURBIO', 'ABISMO'
+        ];
+
+        const gridSize = 15;
+        let grid = Array(gridSize).fill().map(() => Array(gridSize).fill(''));
+        let placedWords = [];
+        let foundWords = new Set();
+        let isSelecting = false;
+        let selectionStart = null;
+        let currentSelection = [];
+        
+        let gameStats = {
+            totalWords: words.length,
+            foundCount: 0
+        };
+        
+        const directions = {
+            horizontal: [0, 1],
+            vertical: [1, 0],
+            diagonal: [1, 1],
+            diagonalUp: [-1, 1]
+        };
+        
+        function isValidPosition(row, col) {
+            return row >= 0 && row < gridSize && col >= 0 && col < gridSize;
+        }
+        
+        function canPlaceWord(word, startRow, startCol, direction) {
+            const [rowDir, colDir] = directions[direction];
+            
+            for (let i = 0; i < word.length; i++) {
+                const row = startRow + i * rowDir;
+                const col = startCol + i * colDir;
+                
+                if (!isValidPosition(row, col)) {
+                    return false;
+                }
+                
+                if (grid[row][col] !== '' && grid[row][col] !== word[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        function placeWord(word, startRow, startCol, direction) {
+            const [rowDir, colDir] = directions[direction];
+            const wordInfo = {
+                word: word,
+                startRow: startRow,
+                startCol: startCol,
+                direction: direction,
+                positions: []
+            };
+            
+            for (let i = 0; i < word.length; i++) {
+                const row = startRow + i * rowDir;
+                const col = startCol + i * colDir;
+                grid[row][col] = word[i];
+                wordInfo.positions.push({row, col});
+            }
+            
+            placedWords.push(wordInfo);
+            return true;
+        }
+        
+        function placeAllWords() {
+            const directionKeys = Object.keys(directions);
+            const sortedWords = [...words].sort((a, b) => b.length - a.length);
+            
+            for (const word of sortedWords) {
+                let placed = false;
+                let attempts = 0;
+                
+                while (!placed && attempts < 200) {
+                    const direction = directionKeys[Math.floor(Math.random() * directionKeys.length)];
+                    const startRow = Math.floor(Math.random() * gridSize);
+                    const startCol = Math.floor(Math.random() * gridSize);
+                    
+                    if (canPlaceWord(word, startRow, startCol, direction)) {
+                        placeWord(word, startRow, startCol, direction);
+                        placed = true;
+                    }
+                    attempts++;
+                }
+            }
+        }
+        
+        function fillEmptySpaces() {
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    if (grid[i][j] === '') {
+                        grid[i][j] = letters[Math.floor(Math.random() * letters.length)];
+                    }
+                }
+            }
+        }
+        
+        function getCellPosition(cellIndex) {
+            return {
+                row: Math.floor(cellIndex / gridSize),
+                col: cellIndex % gridSize
+            };
+        }
+        
+        function getCellIndex(row, col) {
+            return row * gridSize + col;
+        }
+        
+        function getCellsBetween(start, end) {
+            const cells = [];
+            const deltaRow = end.row - start.row;
+            const deltaCol = end.col - start.col;
+            const distance = Math.max(Math.abs(deltaRow), Math.abs(deltaCol));
+            
+            if (distance === 0) {
+                return [start];
+            }
+            
+            const stepRow = deltaRow === 0 ? 0 : deltaRow / Math.abs(deltaRow);
+            const stepCol = deltaCol === 0 ? 0 : deltaCol / Math.abs(deltaCol);
+            
+            if (Math.abs(deltaRow) !== Math.abs(deltaCol) && deltaRow !== 0 && deltaCol !== 0) {
+                return [];
+            }
+            
+            for (let i = 0; i <= distance; i++) {
+                const row = start.row + i * stepRow;
+                const col = start.col + i * stepCol;
+                cells.push({row, col});
+            }
+            
+            return cells;
+        }
+        
+        function checkWordSelection(positions) {
+            if (positions.length < 2) return null;
+            
+            const word = positions.map(pos => grid[pos.row][pos.col]).join('');
+            const reverseWord = word.split('').reverse().join('');
+            
+            return words.find(w => w === word || w === reverseWord);
+        }
+        
+        function markWordAsFound(word, positions) {
+            if (foundWords.has(word)) return;
+            
+            foundWords.add(word);
+            
+            positions.forEach(pos => {
+                const cellIndex = getCellIndex(pos.row, pos.col);
+                const cell = document.getElementById('wordGrid').children[cellIndex];
+                cell.classList.add('found');
+            });
+            
+            const wordElements = document.querySelectorAll('.word-item');
+            wordElements.forEach(element => {
+                if (element.textContent === word) {
+                    element.classList.add('found');
+                }
+            });
+            
+            gameStats.foundCount++;
+            updateGameStats();
+            showWordFoundNotification(word);
+            
+            if (gameStats.foundCount === gameStats.totalWords) {
+                setTimeout(showSuccessMessage, 500);
+            }
+        }
+        
+        function updateGameStats() {
+            const progressFill = document.getElementById('progressFill');
+            const statsText = document.getElementById('statsText');
+            
+            const percentage = (gameStats.foundCount / gameStats.totalWords) * 100;
+            progressFill.style.width = percentage + '%';
+            progressFill.textContent = `${gameStats.foundCount} / ${gameStats.totalWords}`;
+            
+            statsText.innerHTML = `🎯 Palabras encontradas: <strong>${gameStats.foundCount} de ${gameStats.totalWords}</strong>`;
+        }
+        
+        function showWordFoundNotification(word) {
+            const notification = document.createElement('div');
+            notification.className = 'word-found-notification';
+            notification.textContent = `✨ ¡Encontraste: ${word}!`;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 3000);
+        }
+        
+        function showSuccessMessage() {
+            const successMessage = document.getElementById('successMessage');
+            successMessage.style.display = 'block';
+        }
+        
+        function clearSelection() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.classList.remove('selecting');
+            });
+            currentSelection = [];
+        }
+        
+        function createGrid() {
+            const gridElement = document.getElementById('wordGrid');
+            gridElement.innerHTML = '';
+            
+            for (let i = 0; i < gridSize * gridSize; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                const pos = getCellPosition(i);
+                cell.textContent = grid[pos.row][pos.col];
+                cell.dataset.index = i;
+                
+                cell.addEventListener('mousedown', handleMouseDown);
+                cell.addEventListener('mouseenter', handleMouseEnter);
+                cell.addEventListener('mouseup', handleMouseUp);
+                cell.addEventListener('dragstart', e => e.preventDefault());
+                
+                gridElement.appendChild(cell);
+            }
+        }
+        
+        function handleMouseDown(e) {
+            e.preventDefault();
+            isSelecting = true;
+            const cellIndex = parseInt(e.target.dataset.index);
+            selectionStart = getCellPosition(cellIndex);
+            clearSelection();
+            e.target.classList.add('selecting');
+            currentSelection = [selectionStart];
+        }
+        
+        function handleMouseEnter(e) {
+            if (!isSelecting) return;
+            
+            const cellIndex = parseInt(e.target.dataset.index);
+            const currentPos = getCellPosition(cellIndex);
+            
+            clearSelection();
+            
+            const cellsInLine = getCellsBetween(selectionStart, currentPos);
+            currentSelection = cellsInLine;
+            
+            cellsInLine.forEach(pos => {
+                const index = getCellIndex(pos.row, pos.col);
+                const cell = document.querySelector(`[data-index="${index}"]`);
+                if (cell) {
+                    cell.classList.add('selecting');
+                }
+            });
+        }
+        
+        function handleMouseUp(e) {
+            if (!isSelecting) return;
+            
+            isSelecting = false;
+            
+            const foundWord = checkWordSelection(currentSelection);
+            
+            if (foundWord && !foundWords.has(foundWord)) {
+                markWordAsFound(foundWord, currentSelection);
+            } else {
+                setTimeout(clearSelection, 100);
+            }
+        }
+        
+        document.addEventListener('mouseup', () => {
+            if (isSelecting) {
+                isSelecting = false;
+                setTimeout(clearSelection, 100);
+            }
+        });
+        
+        document.addEventListener('selectstart', e => e.preventDefault());
+        
+        function createWordsList() {
+            const wordsElement = document.getElementById('wordsList');
+            wordsElement.innerHTML = '';
+            
+            words.forEach(word => {
+                const wordElement = document.createElement('div');
+                wordElement.className = 'word-item';
+                wordElement.textContent = word;
+                wordsElement.appendChild(wordElement);
+            });
+        }
+        
+        function resetGame() {
+            grid = Array(gridSize).fill().map(() => Array(gridSize).fill(''));
+            placedWords = [];
+            foundWords = new Set();
+            isSelecting = false;
+            selectionStart = null;
+            currentSelection = [];
+            gameStats.foundCount = 0;
+            
+            document.getElementById('successMessage').style.display = 'none';
+            
+            placeAllWords();
+            fillEmptySpaces();
+            createGrid();
+            createWordsList();
+            updateGameStats();
+        }
+        
+        function downloadPDF() {
+            window.print();
+        }
+        
+        function initGame() {
+            placeAllWords();
+            fillEmptySpaces();
+            createGrid();
+            createWordsList();
+            updateGameStats();
+        }
+        
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
